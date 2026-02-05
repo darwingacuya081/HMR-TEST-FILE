@@ -102,7 +102,7 @@ function submitData() {
     }
 
     const rate = parseFloat(row.querySelector(".daily_rate").value);
-    const otRate = rate / 8;
+    const otRate = ( rate / 8 ) * 1.25;
     const amount = work * (rate / 8) + ot * otRate;
 
     records.push({
