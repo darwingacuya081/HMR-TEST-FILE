@@ -1,1 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daily HMR Entry</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="page">
+      <h2>Daily HMR Entry</h2>
 
+      <section class="entry-card">
+        <label for="date">Date</label>
+        <input type="date" id="date" />
+      </section>
+
+      <!-- MANPOWER ROLE SECTIONS -->
+      <div id="roles"></div>
+
+      <!-- EQUIPMENT HMR SECTION -->
+      <section class="role-box equipment-box">
+        <div class="equipment-header">
+          <h3>Equipment HMR</h3>
+          <button type="button" class="add-btn" id="add-equipment">+ Add Equipment</button>
+        </div>
+
+        <div id="equipment-list"></div>
+      </section>
+
+      <button class="submit-btn" type="button" id="submit">Submit All Records</button>
+
+      <p id="status" aria-live="polite"></p>
+    </main>
+
+    <script src="./script.js" defer></script>
+  </body>
+</html>
