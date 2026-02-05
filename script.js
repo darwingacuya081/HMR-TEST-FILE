@@ -28,7 +28,6 @@ const MANPOWER_MASTER = [
 window.addEventListener("load", () => {
   const roles = [...new Set(MANPOWER_MASTER.map((manpower) => manpower.role))];
   const container = document.getElementById("roles");
-  const addEquipmentButton = document.getElementById("add-equipment");
 
   roles.forEach((role) => {
     const box = document.createElement("div");
@@ -45,9 +44,6 @@ window.addEventListener("load", () => {
     box.appendChild(list);
     container.appendChild(box);
   });
-
-  addEquipmentButton.addEventListener("click", () => addEquipmentRow());
-  addEquipmentRow();
 
   document.getElementById("submit").addEventListener("click", submitData);
 });
@@ -86,33 +82,6 @@ function addManpowerRow(container, data) {
   container.appendChild(row);
 }
 
-// Add a single equipment row.
-function addEquipmentRow() {
-  const equipmentList = document.getElementById("equipment-list");
-  const row = document.createElement("div");
-  row.className = "equipment-row";
-
-  row.innerHTML = `
-    <input type="text" class="equipment_name" placeholder="Equipment name" />
-    <input type="number" class="equipment_start_hmr" placeholder="Start HMR" step="0.1" min="0" />
-    <input type="number" class="equipment_end_hmr" placeholder="End HMR" step="0.1" min="0" />
-    <button type="button" class="remove-btn" data-action="remove">❌</button>
-  `;
-
-  row.addEventListener("click", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLButtonElement)) {
-      return;
-    }
-
-    if (target.dataset.action === "remove") {
-      row.remove();
-    }
-  });
-
-  equipmentList.appendChild(row);
-}
-
 // Toggle rate lock.
 function toggleRate(button) {
   const rateInput = button.parentElement.querySelector(".daily_rate");
@@ -133,11 +102,10 @@ function submitData() {
     }
 
     const rate = parseFloat(row.querySelector(".daily_rate").value);
-    const otRate = rate / 8;
+    const otRate = ( rate / 8 ) * 1.25;
     const amount = work * (rate / 8) + ot * otRate;
 
     records.push({
-      entry_type: "manpower",
       date: document.getElementById("date").value,
       role: row.dataset.role,
       name: row.dataset.name,
@@ -146,24 +114,8 @@ function submitData() {
       ot_hours: ot,
       ot_rate: otRate,
       amount,
-    });
-  });
-
-  document.querySelectorAll(".equipment-row").forEach((row) => {
-    const name = row.querySelector(".equipment_name").value.trim();
-    const start = row.querySelector(".equipment_start_hmr").value;
-    const end = row.querySelector(".equipment_end_hmr").value;
-
-    if (!name && !start && !end) {
-      return;
-    }
-
-    records.push({
-      entry_type: "equipment",
-      date: document.getElementById("date").value,
-      equipment_name: name,
-      start_hmr: start,
-      end_hmr: end,
+      start_hmr: document.getElementById("start_hmr").value,
+      end_hmr: document.getElementById("end_hmr").value,
     });
   });
 

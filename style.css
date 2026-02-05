@@ -35,21 +35,6 @@ h3 {
   align-items: center;
 }
 
-.equipment-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.equipment-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
-  gap: 8px;
-  margin-top: 8px;
-  align-items: center;
-}
-
 input,
 select,
 button {
@@ -88,13 +73,7 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .manpower-row,
-  .equipment-row {
+  .manpower-row {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .equipment-header {
-    flex-direction: column;
-    align-items: flex-start;
   }
 }
