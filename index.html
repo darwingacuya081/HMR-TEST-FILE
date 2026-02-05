@@ -1,1 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daily HMR Entry</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="page">
+      <h2>Daily HMR Entry</h2>
 
+      <section class="entry-card">
+        <label for="date">Date</label>
+        <input type="date" id="date" />
+
+        <label for="start_hmr">Start HMR</label>
+        <input type="number" id="start_hmr" />
+
+        <label for="end_hmr">End HMR</label>
+        <input type="number" id="end_hmr" />
+      </section>
+
+      <!-- ROLE SECTIONS -->
+      <div id="roles"></div>
+
+      <button class="submit-btn" type="button" id="submit">Submit All Records</button>
+
+      <p id="status" aria-live="polite"></p>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
