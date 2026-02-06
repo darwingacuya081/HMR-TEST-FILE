@@ -191,6 +191,8 @@ function buildRecords() {
     records.push({
       entry_type: "equipment",
       date: selectedDate,
+      role: "EQUIPMENT",
+      name: name,
       equipment_name: name,
       start_hmr: before,
       end_hmr: after,
