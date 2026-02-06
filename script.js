@@ -1,39 +1,10 @@
 const API_URL =
   "https://script.google.com/macros/s/AKfycbznSjat0-YZA-V_5ObEix3yhTdfAmSWZOjHpddtTtA2o7B1nQWmY8gnirIj173YTQfXBQ/exec";
-const FORM_STATE_KEY = "hmr-form-state-v1";
-const EQUIPMENT_PRESETS = [
-  "VOLVO EC290 BLC (EX34)",
-  "EX24",
-  "VOLVO EC210 D (EX26)",
-  "VOLVO EC210 D (EX18)",
-  "VOLVO EC290 BLC (EX27)",
-  "VOLVO EC200 EX30",
-  "BD10",
-];
+const MASTER_URL = `${API_URL}?mode=master`;
+const FORM_STATE_KEY = "hmr-form-state-v2";
 
-// Master list (fixed as provided).
-const MANPOWER_MASTER = [
-  { role: "HEO", name: "Michael Pedres", rate: 873.04 },
-  { role: "HEO", name: "Edmundo Aragdon", rate: 750 },
-  { role: "HEO", name: "Florentino Estrella", rate: 735 },
-  { role: "HEO", name: "Francis Erick Codog", rate: 750 },
-  { role: "Nightshift", name: "Solaiman Pasandalan", rate: 695 },
-  { role: "Spotter", name: "Crispin Rosales", rate: 695 },
-  { role: "Spotter", name: "Angelo Dela Cruz", rate: 695 },
-  { role: "Spotter", name: "Rafael Jr. Geromo", rate: 695 },
-  { role: "Spotter", name: "Richard Pamposa", rate: 695 },
-  { role: "Spotter", name: "Jonathan Sison", rate: 695 },
-  { role: "Spotter", name: "Ruther Borabo", rate: 695 },
-  { role: "Spotter", name: "Robert Geromo", rate: 695 },
-  { role: "Spotter", name: "Richard Carian", rate: 695 },
-  { role: "Helpers", name: "Felipe Robrigado", rate: 695 },
-  { role: "Helpers", name: "Raffy Gonzales", rate: 695 },
-  { role: "Helpers", name: "Ricardo Delim", rate: 695 },
-  { role: "Helpers", name: "Jarenz Bayuon", rate: 695 },
-  { role: "Helpers", name: "Mark Joseph Rufila", rate: 695 },
-  { role: "Helpers", name: "Edeson Gonzales", rate: 695 },
-  { role: "Helpers", name: "Kelvin Medina", rate: 695 },
-];
+let masterManpower = [];
+let masterEquipment = [];
 
 function initApp() {
   if (window.__hmrInitialized) {
@@ -41,10 +12,45 @@ function initApp() {
   }
   window.__hmrInitialized = true;
 
-  const roles = [...new Set(MANPOWER_MASTER.map((manpower) => manpower.role))];
-  const container = document.getElementById("roles");
-  const addEquipmentButton = document.getElementById("add-equipment");
-  const equipmentSelect = document.getElementById("equipment-select");
+  document.getElementById("submit").addEventListener("click", submitData);
+  document.body.addEventListener("input", saveState);
+  document.body.addEventListener("change", saveState);
+
+  loadMasterData();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
+
+async function loadMasterData() {
+  const status = document.getElementById("status");
+
+  try {
+    const response = await fetch(MASTER_URL, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const payload = await response.json();
+    masterManpower = Array.isArray(payload.manpower) ? payload.manpower : [];
+    masterEquipment = Array.isArray(payload.equipment) ? payload.equipment : [];
+
+    renderRoles();
+    renderEquipmentControls();
+    loadState();
+  } catch (error) {
+    status.innerText = "Failed to load master data. Please refresh.";
+  }
+}
+
+function renderRoles() {
+  const rolesContainer = document.getElementById("roles");
+  rolesContainer.innerHTML = "";
+
+  const roles = [...new Set(masterManpower.map((entry) => entry.role))];
 
   roles.forEach((role) => {
     const box = document.createElement("div");
@@ -63,12 +69,8 @@ function initApp() {
     const list = document.createElement("div");
     list.dataset.role = role;
 
-    MANPOWER_MASTER.filter((manpower) => manpower.role === role).forEach((manpower) =>
-      addManpowerRow(list, manpower)
-    );
-
     box.appendChild(list);
-    container.appendChild(box);
+    rolesContainer.appendChild(box);
   });
 
   document.querySelectorAll("[data-action='add-manpower']").forEach((button) => {
@@ -87,7 +89,11 @@ function initApp() {
   });
 
   updateManpowerSelects();
-  updateEquipmentSelect(equipmentSelect);
+}
+
+function renderEquipmentControls() {
+  const equipmentSelect = document.getElementById("equipment-select");
+  const addEquipmentButton = document.getElementById("add-equipment");
 
   addEquipmentButton.addEventListener("click", () => {
     const selectedEquipment = equipmentSelect.value;
@@ -95,24 +101,11 @@ function initApp() {
     saveState();
     updateEquipmentSelect(equipmentSelect);
   });
-  addEquipmentRow();
 
-  document.getElementById("submit").addEventListener("click", submitData);
-
-  // Save all user edits so values remain after refresh.
-  document.body.addEventListener("input", saveState);
-  document.body.addEventListener("change", saveState);
-
-  loadState();
+  updateEquipmentSelect(equipmentSelect);
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initApp);
-} else {
-  initApp();
-}
-
-function addManpowerRow(container, data) {
+function addManpowerRow(container, data, savedValues = {}) {
   const row = document.createElement("div");
   row.className = "manpower-row";
   row.dataset.name = data.name;
@@ -122,10 +115,17 @@ function addManpowerRow(container, data) {
     <strong>${data.name}</strong>
     <input type="number" class="work_hours" placeholder="Work" step="0.1" />
     <input type="number" class="ot_hours" placeholder="OT" step="0.1" />
-    <input type="number" class="daily_rate" value="${data.rate}" disabled />
+    <input type="number" class="daily_rate" value="${data.rate ?? ""}" disabled />
     <button type="button" class="add-btn" data-action="toggle">✏️</button>
     <button type="button" class="remove-btn" data-action="remove">❌</button>
   `;
+
+  row.querySelector(".work_hours").value = savedValues.work || "";
+  row.querySelector(".ot_hours").value = savedValues.ot || "";
+  row.querySelector(".daily_rate").value = savedValues.rate ?? data.rate ?? "";
+  row.querySelector(".daily_rate").disabled = savedValues.rateLocked !== false;
+  row.querySelector("[data-action='toggle']").textContent =
+    row.querySelector(".daily_rate").disabled ? "✏️" : "🔒";
 
   row.addEventListener("click", (event) => {
     const target = event.target;
@@ -147,8 +147,8 @@ function addManpowerRow(container, data) {
   container.appendChild(row);
 }
 
-function addManpowerByName(name) {
-  const data = MANPOWER_MASTER.find((entry) => entry.name === name);
+function addManpowerByName(name, savedValues = {}) {
+  const data = masterManpower.find((entry) => entry.name === name);
   if (!data) {
     return;
   }
@@ -167,7 +167,7 @@ function addManpowerByName(name) {
     return;
   }
 
-  addManpowerRow(list, data);
+  addManpowerRow(list, data, savedValues);
 }
 
 function updateManpowerSelects() {
@@ -177,7 +177,7 @@ function updateManpowerSelects() {
 
   document.querySelectorAll("[id^='manpower-select-']").forEach((select) => {
     const role = select.id.replace("manpower-select-", "");
-    const availableNames = MANPOWER_MASTER.filter(
+    const availableNames = masterManpower.filter(
       (entry) => entry.role === role && !existingNames.has(entry.name)
     );
 
@@ -216,7 +216,7 @@ function updateEquipmentSelect(select) {
 
   select.innerHTML = "";
 
-  const available = EQUIPMENT_PRESETS.filter((name) => !existingEquipment.has(name));
+  const available = masterEquipment.filter((name) => !existingEquipment.has(name));
   if (available.length === 0) {
     const option = document.createElement("option");
     option.value = "";
@@ -338,6 +338,8 @@ function saveState() {
 function loadState() {
   const rawState = localStorage.getItem(FORM_STATE_KEY);
   if (!rawState) {
+    updateManpowerSelects();
+    updateEquipmentSelect(document.getElementById("equipment-select"));
     return;
   }
 
@@ -348,37 +350,23 @@ function loadState() {
     document.getElementById("volume-cp1").value = state.volumeCp1 || "";
     document.getElementById("volume-cp2").value = state.volumeCp2 || "";
 
-    const manpowerStateByName = new Map((state.manpower || []).map((row) => [row.name, row]));
-    document.querySelectorAll(".manpower-row").forEach((row) => {
-      const saved = manpowerStateByName.get(row.dataset.name);
-      if (!saved) {
-        row.remove();
-        return;
-      }
-
-      row.querySelector(".work_hours").value = saved.work || "";
-      row.querySelector(".ot_hours").value = saved.ot || "";
-      row.querySelector(".daily_rate").value = saved.rate || row.querySelector(".daily_rate").value;
-      row.querySelector(".daily_rate").disabled = saved.rateLocked !== false;
-      row.querySelector("[data-action='toggle']").textContent =
-        row.querySelector(".daily_rate").disabled ? "✏️" : "🔒";
-    });
+    document.querySelectorAll(".manpower-row").forEach((row) => row.remove());
+    (state.manpower || []).forEach((saved) => addManpowerByName(saved.name, saved));
 
     const equipmentList = document.getElementById("equipment-list");
     equipmentList.innerHTML = "";
     const equipmentRows = state.equipment || [];
     if (equipmentRows.length === 0) {
-      addEquipmentRow();
       return;
     }
 
     equipmentRows.forEach((item) => addEquipmentRow(item));
-
-    updateManpowerSelects();
-    updateEquipmentSelect(document.getElementById("equipment-select"));
   } catch (error) {
     localStorage.removeItem(FORM_STATE_KEY);
   }
+
+  updateManpowerSelects();
+  updateEquipmentSelect(document.getElementById("equipment-select"));
 }
 
 function buildRecords() {
