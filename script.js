@@ -1,6 +1,5 @@
 const API_URL =
   "https://script.google.com/macros/s/AKfycbznSjat0-YZA-V_5ObEix3yhTdfAmSWZOjHpddtTtA2o7B1nQWmY8gnirIj173YTQfXBQ/exec";
-const FORM_STATE_KEY = "hmr-form-state-v1";
 
 // Master list (fixed as provided).
 const MANPOWER_MASTER = [
@@ -51,12 +50,6 @@ window.addEventListener("load", () => {
   addEquipmentRow();
 
   document.getElementById("submit").addEventListener("click", submitData);
-
-  // Save all user edits so values remain after refresh.
-  document.body.addEventListener("input", saveState);
-  document.body.addEventListener("change", saveState);
-
-  loadState();
 });
 
 function addManpowerRow(container, data) {
@@ -92,19 +85,15 @@ function addManpowerRow(container, data) {
   container.appendChild(row);
 }
 
-function addEquipmentRow(initialData = {}) {
+function addEquipmentRow() {
   const equipmentList = document.getElementById("equipment-list");
   const row = document.createElement("div");
   row.className = "equipment-table equipment-row";
 
   row.innerHTML = `
-    <input type="text" class="equipment_name" placeholder="Equipment name" value="${initialData.name || ""}" />
-    <input type="number" class="equipment_before_hmr" placeholder="0" step="0.1" min="0" value="${
-      initialData.before || ""
-    }" />
-    <input type="number" class="equipment_after_hmr" placeholder="0" step="0.1" min="0" value="${
-      initialData.after || ""
-    }" />
+    <input type="text" class="equipment_name" placeholder="Equipment name" />
+    <input type="number" class="equipment_before_hmr" placeholder="0" step="0.1" min="0" />
+    <input type="number" class="equipment_after_hmr" placeholder="0" step="0.1" min="0" />
     <input type="number" class="equipment_hmr" placeholder="0" step="0.1" readonly />
     <button type="button" class="remove-btn" data-action="remove">❌</button>
   `;
@@ -123,12 +112,10 @@ function addEquipmentRow(initialData = {}) {
 
     if (target.dataset.action === "remove") {
       row.remove();
-      saveState();
     }
   });
 
   equipmentList.appendChild(row);
-  updateEquipmentHmr(row);
 }
 
 function updateEquipmentHmr(row) {
@@ -150,86 +137,12 @@ function carryForwardEquipmentBeforeValues() {
       updateEquipmentHmr(row);
     }
   });
-
-  saveState();
 }
 
 function toggleRate(button) {
   const rateInput = button.parentElement.querySelector(".daily_rate");
   rateInput.disabled = !rateInput.disabled;
   button.textContent = rateInput.disabled ? "✏️" : "🔒";
-  saveState();
-}
-
-function getStateFromDom() {
-  const manpower = Array.from(document.querySelectorAll(".manpower-row")).map((row) => ({
-    name: row.dataset.name,
-    role: row.dataset.role,
-    work: row.querySelector(".work_hours").value,
-    ot: row.querySelector(".ot_hours").value,
-    rate: row.querySelector(".daily_rate").value,
-    rateLocked: row.querySelector(".daily_rate").disabled,
-  }));
-
-  const equipment = Array.from(document.querySelectorAll(".equipment-row")).map((row) => ({
-    name: row.querySelector(".equipment_name").value,
-    before: row.querySelector(".equipment_before_hmr").value,
-    after: row.querySelector(".equipment_after_hmr").value,
-  }));
-
-  return {
-    date: document.getElementById("date").value,
-    volumeCp1: document.getElementById("volume-cp1").value,
-    volumeCp2: document.getElementById("volume-cp2").value,
-    manpower,
-    equipment,
-  };
-}
-
-function saveState() {
-  localStorage.setItem(FORM_STATE_KEY, JSON.stringify(getStateFromDom()));
-}
-
-function loadState() {
-  const rawState = localStorage.getItem(FORM_STATE_KEY);
-  if (!rawState) {
-    return;
-  }
-
-  try {
-    const state = JSON.parse(rawState);
-
-    document.getElementById("date").value = state.date || "";
-    document.getElementById("volume-cp1").value = state.volumeCp1 || "";
-    document.getElementById("volume-cp2").value = state.volumeCp2 || "";
-
-    const manpowerStateByName = new Map((state.manpower || []).map((row) => [row.name, row]));
-    document.querySelectorAll(".manpower-row").forEach((row) => {
-      const saved = manpowerStateByName.get(row.dataset.name);
-      if (!saved) {
-        return;
-      }
-
-      row.querySelector(".work_hours").value = saved.work || "";
-      row.querySelector(".ot_hours").value = saved.ot || "";
-      row.querySelector(".daily_rate").value = saved.rate || row.querySelector(".daily_rate").value;
-      row.querySelector(".daily_rate").disabled = saved.rateLocked !== false;
-      row.querySelector("[data-action='toggle']").textContent =
-        row.querySelector(".daily_rate").disabled ? "✏️" : "🔒";
-    });
-
-    const equipmentList = document.getElementById("equipment-list");
-    equipmentList.innerHTML = "";
-    const equipmentRows = state.equipment || [];
-    if (equipmentRows.length === 0) {
-      addEquipmentRow();
-      return;
-    }
-
-    equipmentRows.forEach((item) => addEquipmentRow(item));
-  } catch (error) {
-    localStorage.removeItem(FORM_STATE_KEY);
-  }
 }
 
 function buildRecords() {
@@ -278,8 +191,6 @@ function buildRecords() {
     records.push({
       entry_type: "equipment",
       date: selectedDate,
-      role: "Equipment",
-      name,
       equipment_name: name,
       start_hmr: before,
       end_hmr: after,
