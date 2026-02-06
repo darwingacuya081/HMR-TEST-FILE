@@ -54,6 +54,13 @@ h4 {
   gap: 12px;
 }
 
+.equipment-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .equipment-table {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr auto;
